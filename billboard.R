@@ -7,8 +7,7 @@ library(stringr)
 library(radiant.data)
 library(radiant)
 
-# ------------------------Part 1: Web Scraping from Billboard -------------------------
-
+# ------------------------Part 1: Web Scraping from Billboard ----------------------
 url_base <- "https://en.wikipedia.org/wiki/Billboard_Year-End_Hot_100_singles_of_%d" # base url
 
 billboards <- map_df(1968:2017, function(i) {
@@ -34,10 +33,7 @@ billboards <- map_df(1968:2017, function(i) {
   yearTable <- data_df %>% mutate(year = i)
 })
 
-#str(billboards) 
-
-# ----------------------------------Part 2: Web Scraping for genre ---------------------------------
-
+# --------------------------Part 2: Web Scraping for genre --------------------------
 ## rename columns
 colnames(billboards) <- c("rank", "song_name", "singer", "year")
 
@@ -52,64 +48,7 @@ billboards_wrk$song_name_dash <- str_replace_all(billboards_wrk$song_name, ",", 
   str_replace_all(., "&", "") %>% 
   str_replace_all(., "  ", " ") %>% 
   str_replace_all(., " ", "-")  
-
-<<<<<<< HEAD
-for (i in 2016:2017){
-  
-  ## testing code (delete this line later)
-  #i <- 2017 
-=======
-## get simplified singer name for url search
-billboards_wrk$singer_spl <- billboards_wrk$singer %>% 
-  str_replace_all(., "P!nk", "Pink") %>% 
-  str_replace_all(., "The Weeknd", "Weeknd") %>% 
-  str_replace_all(., "Zedd, Maren Morris & Grey", "Zedd") %>% 
-  tolower(.) %>% 
->>>>>>> f5e6b0d7c775fd9f974fa36f2632689621ecdedc
-  
-  map_chr(.,function(x){
-    if (grepl("and", x) | grepl("featuring", x)){
-      
-      x <- gsub("\\ and.*", "", x)
-      x <- gsub("\\ featuring.*", "", x)
-      x <- as.character(tolower(str_replace_all(x, "[^[:alnum:]]", "")))
-      
-    } else if (grepl("&", x)){
-      
-      x <- as.character(tolower(str_replace_all(gsub("\\&.*", "", x), "[^[:alnum:]]", "")))
-      
-    } else if (grepl(" x ", x)){
-      
-      x <- as.character(tolower(str_replace_all(gsub("\\ x .*", "", x), "[^[:alnum:]]", "")))
-      
-    } else if (grepl(" + ", x)){
-      
-      x <- as.character(tolower(str_replace_all(gsub("\\ + .*", "", x), "[^[:alnum:]]", "")))
-      
-    } else{
-      
-      x <- as.character(tolower(x))
-      
-    }
-    
-    x <- str_replace_all(x, "[^[:alnum:]]", "")
-    
-  })
-
-## remove temp variables
-rm(singer_raw, singer_spl,song_name_raw)
-
-## output file 
-billboards_genre <- data.frame()
-
-## *** loop for genre *** 
-## NOTE: use a nested loop for modification purpose, can use one big loop if it works for every single year.
-
-## create a new column for genre_raw
-billboards_wrk <- billboards_wrk %>% 
-  mutate(genre_raw = "")
-
-
+                                          
 ## scraping the genre_raw
 for (i in 1968:2017){
   
@@ -146,33 +85,8 @@ for (i in 1968:2017){
   billboards_genre <- rbind(billboards_genre, dat)
   
 }
-
-# -----------------Xiaoyi's approach. I tried with a different way to clean outside of loop  - Lei ----------------
-
-# ## clean the genre
-# if (grepl("Genre", genre_dat[30,]) & grepl("Length", genre_dat[30,])){
-# 
-#   dat[j, "genre"] <- gsub('^.*Genre|Length.*$', '', genre_dat[30,]) # get the text between 2 words
-# 
-# } else{ 
-# 
-#   tmp_str_song <- toupper(unlist(strsplit(song_name_raw, split = "\ "))[1])
-#   tmp_str_singer <- toupper(unlist(strsplit(singer_raw, split = "\ "))[1])
-# 
-#   if (tmp_str_song == "DON'T"){
-# 
-#     dat[j, "genre"] <- gsub(paste0("\\", " DON", ".*"), "", toupper(genre_dat[30,]))
-# 
-#   } else{
-# 
-#     dat[j, "genre"] <- gsub(paste0("\\", " ", tmp_str_singer, ".*"), "", toupper(genre_dat[30,]))
-#     dat[j, "genre"] <- gsub(paste0("\\", " ", tmp_str_song, ".*"), "", toupper(dat[j, "genre"]))
-# 
-#   } # else 2
-# 
-# } # else 1
-
-#-----------------------------------------------  Lei's approach -------------------------------------------------
+## rename columns
+colnames(billboards) <- c("rank", "song_name", "singer", "year")
 
 ## clean the genre
 temp_dat <-
@@ -185,8 +99,6 @@ temp_dat <-
            str_replace_all(.,"in'|ing","in") %>%  # match "ing"
            str_replace_all(.,"[^[:alnum:]]+","-") )%>% # remove all symbols
   as.data.frame(., colnames("genres","song_name")) 
-
-
 
 billboards_genre$genre <- 
   map2(temp_dat$billboards_genre.genre_raw,
@@ -225,12 +137,10 @@ fail_list <- billboards_genre %>%
   filter(genre %in% c("Extraction failed","No genre detected") ) %>%  #,"No genre detected"
   select(singer_spl,song_name,genre_raw,genre) 
 
-
 fail_list %>% 
   group_by(genre) %>% 
   count() #
 
-## --- Updates on 4/28/2018: --- Start
 
 ## define a function to deal with errors/ warnings
 readUrl <- function(url) {
@@ -305,20 +215,13 @@ for (r in 1:nrow(billboards_genre)){
   
 } # end for loop
 
-## Manual adjustment
-#billboards_genre[108, "genre"] <- "Wiki page 404"
-
 billboards_genre_updated <- billboards_genre
-
-## --- Updates on 4/28/2018: --- End
-
-## continue working ..................
 
 ## output dataset
 my_path <- "data/billboards_genre_updated.rds"
 readr::write_rds(billboards_genre_updated, path = my_path)
 
-## --- spread genres --- Updated on 5/1/2018
+## --- spread genres --- 
 
 #billboard_join <- readRDS("C:/Users/Xiaoyi/Desktop/git/MGTA495Lyrics/data/billboard_join.rds")
 
@@ -613,7 +516,7 @@ origin <- billboards_genre %>%
 lack <- origin %>% 
   anti_join(lyrics, by = c("rank", "song_name", "singer", "year"))
 
-#-------------------------------------------------------------------------
+#--------------------------------------------------------
 for (i in 1:1213) {
   ## ifelse(i %% 50 == 0, Sys.sleep(runif(1, 20, 30)), Sys.sleep(runif(1,1,3)))
   Sys.sleep(round(runif(1,1,5)))
@@ -651,173 +554,8 @@ billboards_lyrics <- readRDS("data/billboards_lyrics_new.rds")
 # The leftovers without lyrics (800+)
 leftover_no_lyrics <- readRDS("data/leftover_no_lyrics.rds")
 
-# # reset function
-# lyricsURL <- "http://www.metrolyrics.com/"
-# 
-# readUrl <- function(song_name_raw, singer_raw, lyrics_data) {
-#      str_replace_all(song_name_raw, "Scarborough Fair", "Scarborough FairCanticle") %>% 
-#      str_replace_all(., "(Sweet Sweet Baby) Since You've Been Gone", "Since You've Been Gone")
-# 
-#    song <- as.character(tolower(str_replace_all(song_name_raw, "[^[:alnum:]]", " "))) %>% 
-#            as.character(tolower(str_replace_all(., ",", ""))) %>% 
-#            as.character(tolower(str_replace_all(., "'", "")))
-#    
-#    singer <- str_replace_all(singer_raw, " and.*$", "") %>%  # remove the part after "and"
-#      str_replace_all(., " &.*$", "") %>% # remove the part after "&"
-#      str_replace_all(., "Paul Mauriat", "Johnny Mathis") %>% 
-#      str_replace_all(., "O. C. Smith", "Tony Bennett") %>% 
-#      str_replace_all(., "Hugh Masekela", "Raven Symone")
-# # 
-#   if (grepl(" Featuring ", singer)){
-#      singer <- as.character(tolower(str_replace_all(gsub("\\ Featuring .*", "", singer), "[^[:alnum:]]", "")))
-#      
-#    } else if (grepl(" featuring ", singer)){
-#      singer <- as.character(tolower(str_replace_all(gsub("\\ featuring .*", "", singer), "[^[:alnum:]]", "")))
-# #     
-#    } else if (grepl(" with ", singer)){
-#      singer <- as.character(tolower(str_replace_all(gsub("\\ with .*", "", singer), "[^[:alnum:]]", "")))
-#      
-#    } else if (grepl("The", singer)){
-#      singer <- as.character(tolower(str_replace_all(gsub("\\The ", "", singer), "[^[:alnum:]]", "")))
-#      
-#    } else if (grepl("&", singer)){
-#      singer <- as.character(tolower(str_replace_all(gsub("\\&", "", singer), "[^[:alnum:]]", "")))
-#      
-#    } else if (grepl("-", singer)){
-#      singer <- as.character(tolower(str_replace_all(gsub("\\-", "", singer), "[^[:alnum:]]", "")))
-# #     
-#    } else if (grepl(" x ", singer)){
-#      singer <- as.character(tolower(str_replace_all(gsub("\\ x .*", "", singer), "[^[:alnum:]]", "")))
-# #     
-#    } else if (grepl(" + ", singer)){
-#      singer <- as.character(tolower(str_replace_all(gsub("\\ + .*", "", singer), "[^[:alnum:]]", "")))
-# #     
-#    } else {
-#      singer <- as.character(tolower(singer))
-# #   }
-#    
-#    singer <- #gsub(" ", "", singer, fixed = TRUE) %>% # remove space
-#      gsub(".", " ", singer, fixed = TRUE) %>% # remove .
-#      gsub(",", "", ., fixed = TRUE) %>% # remove ,
-#      #gsub("!", "", ., fixed = TRUE) %>% # remove !
-#      #gsub("+", "", ., fixed = TRUE) %>% # remove +
-#      gsub("'", "", ., fixed = TRUE)     # remove '
-# #   
-# #   ## get complete URL
-#    url <- paste0(lyricsURL, paste0(str_replace_all(song, " ", "-")), "-", "lyrics", "-", 
-#                  str_replace_all(singer, " ", "-"), ".html")
-#    
-#    out <- tryCatch(
-#      {message("Qingqing loves u")
-# #       
-#        text <- read_html(url) %>% 
-#          html_nodes("div#lyrics-body-text") %>%
-#          html_nodes("p.verse") %>%
-#          html_text() %>%
-#          paste(collapse = " ") %>%
-#          gsub("\n", " ", .)
-# 
-# #       ## create a data frame
-#        return(data.frame(song_name = song_name_raw, singer = singer_raw, 
-#                          lyricsURL = url, lyrics = text))
-#      },
-#      error=function(cond) {
-#        message(paste("URL does not seem to exist:", url))
-#        message("Here's the original error message:")
-#        message(cond)
-#        return(NA)
-#      },
-#      warning=function(cond) {
-#        message(paste("URL caused a warning:", url))
-#        message("Here's the original warning message:")
-#        message(cond)
-#        return(NULL)
-#      },
-#      finally={
-#        message(paste("Processed URL:", url))
-#        message(paste(song_name_raw, singer_raw))
-#      }
-#    )    
-#    return(out)
-#  }
-# }
-#   
-# for (i in 1:nrow(leftover_no_lyrics)) { 
-#    #ifelse(i %% 50 == 0, Sys.sleep(runif(1, 20, 30)), Sys.sleep(runif(1,1,3)))
-#    #Sys.sleep(round(runif(1,1,5)))
-#    song_name_raw <- leftover_no_lyrics[i, "song_name"]    ## get song name
-#    singer_raw <- leftover_no_lyrics[i, "singer"]    ## get singers
-# 
-#    temp2 <- readUrl(song_name_raw, singer_raw, lyrics_data)
-#     if (!is.null(temp2) & !is.na(temp2)) {
-#       lyrics_data <- rbind(lyrics_data, temp2)
-#     }
-# }
-# 
-# 
-# # metrolyrics round 2
-# lyrics_2 <- unique(lyrics_data[1204:nrow(lyrics_data), ])
-# lyrics_2 <- lyrics_2 %>% 
-#               filter(nchar(lyrics_2$lyrics) > 165) %>%
-#               filter(!grepl("Add Lyrics", lyrics)) %>% 
-#               filter(!str_detect(lyrics, "View All.*")) %>% 
-#               filter(!str_detect(lyrics, "Check Out.*")) %>% 
-#               filter(!grepl("Advisory", lyrics)) %>%
-#               filter(!grepl("^Related",lyrics))
-# 
-# # join data with year / rank / song / artist / lyrics
-# lyrics_metro2 <- lyrics_2 %>% 
-#     inner_join(leftover_no_lyrics, by = c("song_name", "singer")) %>% 
-#     select(rank, song_name, singer, year, lyrics)
-# # 
-# # # save data
-# billboards_lyrics_updated <- rbind(billboards_lyrics2, lyrics_metro2)
-# readr::write_rds(billboards_lyrics_updated, path = "data/billboards_lyrics_new.rds")
 
-# # -------------------------------- Don't run -------------------------
-# for (i in 1:1212) { 
-#   #ifelse(i %% 50 == 0, Sys.sleep(runif(1, 20, 30)), Sys.sleep(runif(1,1,3)))
-#   Sys.sleep(round(runif(1,1,5)))
-#   ## get song names
-#   song_name_raw <- lack[i, "song_name"]
-#   
-#   ## get singers
-#   singer_raw <- lack[i, "singer"]
-#   
-#   temp2 <- readUrl(song_name_raw, singer_raw, lyrics_data)
-#   if (!is.null(temp2) & !is.na(temp2)) {
-#     lyrics_data <- rbind(lyrics_data, temp2)
-#   }
-# }
-# # ---------------------------------------------------------------------
-# 
-# # convert data type to character
-# lyrics_data$song_name <- as.character(lyrics_data$song_name)
-# lyrics_data$singer <- as.character(lyrics_data$singer)
-# lyrics_data$lyrics <- as.character(lyrics_data$lyrics)
-# 
-# a <- lyrics_data %>% # filter the songs without lyrics
-#   filter(nchar(lyrics_data$lyrics) > 165) %>% 
-#   filter(!grepl("Add Lyrics", lyrics)) %>% 
-#   filter(!str_detect(lyrics, "View All.*")) %>% 
-#   filter(!str_detect(lyrics, "Check Out.*")) %>% 
-#   filter(!grepl("Advisory", lyrics)) 
-# 
-# # join data with year / rank / song / artist / lyrics
-# lyrics_metro <- a %>% 
-#   inner_join(lack, by = c("song_name", "singer")) %>% 
-#   select(rank, song_name, singer, year, lyrics)
-# 
-# # save data
-# billboard_lyrics2 <- rbind(billboards_lyrics, lyrics_metro)
-# readr::write_rds(billboard_lyrics_data2, path = "data/billboards_lyrics2.rds")
-# 
-# # Songs that failed to scrape lyrics (874+)
-# leftover <- origin %>% 
-#     anti_join(billboards_lyrics, by = c("rank", "song_name", "singer", "year"))
-# readr::write_rds(leftover, path = "data/leftover_no_lyrics.rds")
-
-# ------------------------- PART 4: combine the genre and lyrics dataset---------------------------------
+# ------------ PART 4: combine the genre and lyrics dataset -----------------
 billboard_join <- billboards_lyrics_new %>% 
   left_join(billboards_genre_updated, by = c("rank","year","song_name","singer")) %>% 
   select(rank,year,song_name,singer,lyrics,genre_raw,genre) %>% 
