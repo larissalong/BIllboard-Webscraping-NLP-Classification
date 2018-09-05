@@ -1,7 +1,7 @@
-# BIllboard-Webscraping-NLP-Project
+# Billboard-Webscraping-NLP-Project
 
 ## Objectives: 
-By studying the hot 100 songs on billboard year-end from year 1968 to 2017, we would like to answer the below questions:
+We are a group of music lovers from MS Business Analytics Program 2018. By studying the lyrics of hot 100 songs on Billboard year-end from year 1968 to 2017, we would like to answer the below questions:
 
 1. How did music topics change over time? 
 
@@ -16,6 +16,7 @@ By studying the hot 100 songs on billboard year-end from year 1968 to 2017, we w
 1. Song name: Hot 100 ranking: https://en.wikipedia.org/wiki/Billboard_Year-End
 2. Song lyrics: 
     https://www.azlyrics.com/
+    
     http://www.metrolyrics.com/
 
 3. Song genre: Google search
@@ -25,22 +26,34 @@ By studying the hot 100 songs on billboard year-end from year 1968 to 2017, we w
 2. Lyrics: from the above two websites
 3. Genre: google search to fetch the below variables:
     a. Song name
+    
     b. Artist name
+    
     c. Lyrics
-    d. Genre: Pop, Rock, R&B (“randb”) <Rhythm-and-blues>, Soul, Hip-hop, Rap, Country, Dance, Alternative-indie, Blues,    
-       Disco, Funk, Jazz, Folk, Easy-listenin, Singer Songwriter, Electric, Adult-contemporary, Punk, Metal, etc
+    
+    d. Genre: Pop, Rock, R&B, Soul, Hip-hop, Rap, Country, Dance, Alternative-indie, Blues, Punk, Metal, etc
+    
     e. Ranking
+    
     f. Ranking Year
 
 ## Text mining:
 We conducted text mining by different dimensions and metrics:
+
 1. Dimension: By music genre / decades / ranking
+
 2. Metrics: 
+    
     a. Word use: frequency / repetition / diversity
+    
     b. Top Artists based on ranking
+    
     c. Sentiment analysis
+    
     d. Part-of-speech tagging
+    
     e. Topic modeling
+    
     f. repetition
  
 ## Classification:
@@ -51,6 +64,7 @@ To predict whether a song belongs to a particular song genre or not solely based
 
 We used SVM and logistic regression models in this project.
 
+## For more details:
 Please see:
 1. web scraping code in billboard.R
 2. text mining code in lyrics text mining.R
