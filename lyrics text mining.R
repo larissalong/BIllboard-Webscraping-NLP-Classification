@@ -1,4 +1,4 @@
-## load lobs
+## load libraries
 library(tidyverse)
 library(tidytext)
 library(sentimentr)
@@ -588,7 +588,257 @@ sent_prep %>%
   labs(title = "Relative Sentiment by Genre with a Wider Range of Sentiments") +
   labs(x = "Sentiment", y = "Relative Sentiment (Percentage)")
 
-#------------------------------- PART 3: Part-of-speech tagging - in another r file ------------------
+#-------------------------------- PART 3: Part-of-speech tagging  ------------------------------------
+
+## Download the English corpus(Only run this once)
+# dl <- udpipe_download_model(language = "english")
+
+## @knitr setup
+udmodel_english <- udpipe_load_model(file = 'english-ud-2.0-170801.udpipe')
+
+# Read data
+billboard <- readRDS("data/billboard_join_final.rds") %>% 
+  mutate(decade = 
+           ifelse(year %in% 1970:1979, "1970s", 
+                  ifelse(year %in% 1980:1989, "1980s", 
+                         ifelse(year %in% 1990:1999, "1990s", 
+                                ifelse(year %in% 2000:2009, "2000s", 
+                                       ifelse(year %in% 2010:2017, "2010s","1960s"))))))
+
+## Creat lytics text
+lyrics_text <- data.frame(docID = c(1:nrow(billboard)),
+                          song_name = billboard$song_name,
+                          text = as.character(billboard$lyrics),
+                          stringsAsFactors = F)
+
+# ## Tag the speech(This takes a lot time, so don't run it again if you had)
+# lyrics_pos <- udpipe_annotate(udmodel_english, x = lyrics_text$text) %>% 
+#   as.data.frame(.) %>% 
+# 
+#   saveRDS(lyrics_pos,"data/lyrics_pos.rds")
+
+## Join with genres,decades, ranks, etc...
+lyrics_pos <- readRDS("data/lyrics_pos.rds")
+lyrics_pos_wrk <- lyrics_pos %>%
+  mutate(docID = as.integer(str_remove(doc_id,"doc")) ) %>% 
+  filter(upos != "PUNCT") %>% 
+  left_join(select(lyrics_text,-text),by ='docID') %>% 
+  left_join(select(mutate(billboard,docID = c(1:nrow(billboard))),
+                   -c(genre_raw,genre,lyrics)),
+            by = 'docID')
+
+
+nlyrics <- nrow(lyrics_text)
+
+## @knitr TopNouns
+
+# noun for all
+topNoun_all <- lyrics_pos_wrk %>%
+  filter(upos=="NOUN") %>%
+  count(lemma,sort = T) %>%
+  slice(1:20) %>%
+  ggplot(aes(x=fct_reorder(lemma,n),y=n)) + 
+  geom_bar(stat='identity') + 
+  coord_flip()+
+  labs(title='Top Nouns Used in billboard-hot-100 lyrics',
+       subtitle = paste0(nlyrics,' lyrics from billboard-hot-100'),
+       caption = 'data sources: Wikipedia, azlyrics.com, and metrolyrics.com /n 1968 ~ 2017',
+       x = 'Noun',
+       y = 'Count')
+
+# noun by decade
+tmp <- lyrics_pos_wrk %>%
+  filter(upos=="NOUN") %>% 
+  count(decade,lemma) %>%
+  group_by(decade) %>%
+  arrange(desc(n)) %>%
+  slice(1:30) %>%
+  ungroup() %>%
+  mutate(x = n():1)  # for plotting
+
+topNoun_bydecade <- tmp %>%
+  ggplot(aes(x=x,y=n,fill=decade)) + 
+  geom_bar(stat='identity',show.legend = F) + 
+  coord_flip() + 
+  facet_wrap(~decade,scales='free',nrow = 1) +
+  scale_x_continuous(breaks = tmp$x,
+                     labels = tmp$lemma,
+                     expand = c(0,0)) + 
+  labs(title='Top Nouns by Decades',
+       subtitle = paste0(nlyrics,' lyrics from billboard-hot-100'),
+       caption = 'data sources: Wikipedia, azlyrics.com, and metrolyrics.com /n 1968 ~ 2017',
+       x = 'Noun',
+       y = 'Count')+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+# noun by genre
+
+genres_list <- c("pop","rap","country","blues","dance") 
+noun_genre_plots <- list() 
+for (i in 1:length(genres_list) ) {
+
+  tmp <- lyrics_pos_wrk %>%
+    filter(upos == "NOUN") %>%
+    filter_(paste(genres_list[i],"== 1" ) ) %>%
+    count(lemma) %>%
+    arrange(desc(n)) %>%
+    slice(1:30) %>%
+    mutate(x = n():1) 
+  
+  noun_genre_plots[[i]] <- tmp %>% 
+    ggplot(aes(x=x,y=n)) + 
+    geom_bar(stat='identity',fill = scales::hue_pal()(length(genres_list))[i],show.legend = F) + 
+    coord_flip() + 
+    scale_x_continuous(breaks = tmp$x,
+                       labels = tmp$lemma,
+                       expand = c(0,0)) + 
+    labs(title=genres_list[i],
+         x = 'Noun',
+         y = 'Count')+
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+
+topNoun_bygenre <- gridExtra::grid.arrange(grobs = noun_genre_plots, ncol = length(genres_list))
+
+## @knitr TopADJ
+
+## ADJ by decades
+tmp <- lyrics_pos_wrk %>%
+  filter(upos=="ADJ") %>%
+  count(decade,lemma) %>%
+  group_by(decade) %>%
+  arrange(desc(n)) %>%
+  slice(1:30) %>%
+  ungroup() %>%
+  mutate(x = n():1)   # for plotting
+
+topAdj_bydecade <- tmp %>%   
+  ggplot(aes(x=x,y=n,fill=decade)) + 
+  geom_bar(stat='identity',show.legend = F) + 
+  coord_flip() + 
+  facet_wrap(~decade,scales='free',nrow = 1) +
+  scale_x_continuous(breaks = tmp$x,
+                     labels = tmp$lemma,
+                     expand = c(0,0)) + 
+  labs(title='Top Adjectives by Decades',
+       subtitle = paste0(nlyrics,' lyrics from billboard-hot-100'),
+       caption = 'data sources: Wikipedia, azlyrics.com, and metrolyrics.com /n 1968 ~ 2017',
+       x = 'Adjectives',
+       y = 'Count')+
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+## ADJ by genre
+
+ADJ_genre_plots <- list() 
+for (i in 1:length(genres_list) ) {
+  
+  tmp <- lyrics_pos_wrk %>%
+    filter(upos == "ADJ") %>%
+    filter_(paste(genres_list[i],"== 1" ) ) %>%
+    count(lemma) %>%
+    arrange(desc(n)) %>%
+    slice(1:30) %>%
+    mutate(x = n():1) 
+  
+  ADJ_genre_plots[[i]] <- tmp %>% 
+    ggplot(aes(x=x,y=n)) + 
+    geom_bar(stat='identity',fill = scales::hue_pal()(length(genres_list))[i],show.legend = F) + 
+    coord_flip() + 
+    scale_x_continuous(breaks = tmp$x,
+                       labels = tmp$lemma,
+                       expand = c(0,0)) + 
+    labs(title=genres_list[i],
+         x = 'Noun',
+         y = 'Count')+
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+}
+
+topADJ_bygenre <- gridExtra::grid.arrange(grobs = ADJ_genre_plots, ncol = length(genres_list))
+
+## @knitr Cooccurrences_for_all
+stats <- cooccurrence(x = lyrics_pos_wrk$lemma, 
+                      relevant = lyrics_pos_wrk$upos %in% c("NOUN", "ADJ"))
+
+wordnetwork <- head(stats,150)
+
+wordnetwork <- graph_from_data_frame(wordnetwork)
+
+Cooc_All <- ggraph(wordnetwork, layout = "fr") +
+  geom_edge_link(aes(width = cooc, edge_alpha = cooc), edge_colour = "pink",show.legend = F) +
+  geom_node_text(aes(label = name), col = "darkgreen", size = 3) +
+  labs(title = "Cooccurrences of Words Next to Each Other", 
+       subtitle = "Nouns & Adjective",
+       caption = 'data sources: Wikipedia, azlyrics.com, and metrolyrics.com /n 1968 ~ 2017',
+       x = '',y='')+
+  theme_bw()
+
+
+## @knitr DependencyParsing
+
+tmpLeft <- lyrics_pos_wrk %>%
+  select(doc_id,paragraph_id,sentence_id,lemma,head_token_id,dep_rel,upos)
+
+tmpRight <- lyrics_pos_wrk %>%
+  select(doc_id,paragraph_id,sentence_id,token_id,lemma,upos)
+
+
+tmp2 <- tmpLeft %>%
+  left_join(tmpRight,
+            by=c('doc_id'='doc_id',
+                 'paragraph_id'='paragraph_id',
+                 'sentence_id'='sentence_id',
+                 'head_token_id'='token_id')
+  ) %>%
+  filter(dep_rel %in% "nsubj" & upos.x %in% c("NOUN") & upos.y %in% c("ADJ")) %>%
+  mutate(term = paste(lemma.y,lemma.x,sep=" ")) %>%
+  count(term,sort = T)
+
+
+dep_All <- tmp2 %>%
+  head(40) %>%
+  ggplot(aes(x=fct_reorder(term,n),y=n)) + 
+  geom_bar(stat='identity') + 
+  coord_flip() +
+  labs(title='Top Keywords Extracted Using Dependency Parsing',
+       subtitle = paste0(nlyrics,' lyrics from billboard-hot-100'),
+       caption = 'data sources: Wikipedia, azlyrics.com, and metrolyrics.com /n 1968 ~ 2017',
+       x = 'Keyword',
+       y = 'Frequency')
+
+
+## @knitr RakeKeyWords
+statsAll <- keywords_rake(x = lyrics_pos_wrk, 
+                          term = "token", 
+                          group = c("doc_id", "paragraph_id", "sentence_id"),
+                          relevant = lyrics_pos_wrk$upos %in% c("NOUN", "ADJ"),
+                          ngram_max = 4) %>%
+  filter(freq > 50) %>%
+  arrange(desc(freq))
+
+
+tmp <- statsAll %>%
+  filter(ngram %in% c(1,2)) %>%
+  group_by(ngram) %>%
+  arrange(desc(freq)) %>%
+  slice(1:20) %>%
+  ungroup() %>%
+  mutate(x = n():1)
+
+Rake_All <- tmp %>%
+  mutate(ngram=factor(paste0('ngram=',ngram))) %>%
+  ggplot(aes(x=x,y=freq,fill=ngram)) + 
+  geom_bar(stat='identity',show.legend = F) + 
+  coord_flip() + 
+  facet_wrap(~ngram,scales='free',nrow = 1) +
+  scale_x_continuous(breaks = tmp$x,
+                     labels = tmp$keyword,
+                     expand = c(0,0)) + 
+  labs(title='Top Keywords',
+       subtitle = 'Extracted using RAKE',
+       caption = 'data sources: Wikipedia, azlyrics.com, and metrolyrics.com /n 1968 ~ 2017',
+       x = 'Keyword',
+       y = 'Count')
+
 
 #-------------------------------- PART 4: TF_IDF & Topic modeling ------------------------------------
 options( scipen = 999) # disable scientific notation in plot
@@ -863,7 +1113,7 @@ top_terms_rap %>%
 
 # Critial thinking: the results of topic analysis have to interpreted subjectively.
 
-## --------------------------------------- Part 5: lyrics repetition --------------------------------------
+## --------------------------------------- Part 5: Lyrics repetition --------------------------------------
 richness_wrk <- billboard %>%
   unnest_tokens(word, lyrics) %>% 
   anti_join(stop_words,by ="word") %>% 
@@ -908,74 +1158,3 @@ for (i in 1:length(genres_list) ) {
 }
 
 rich_bygenre <- gridExtra::grid.arrange(grobs = rich_genre_plots, ncol = length(genres_list))
-
-## --------------------------------------- Part 6: Classification --------------------------------------
-### There are 2 ways to predict whether a song is rap or not based on its lyrics: word frequency or word2vec
-## https://36kr.com/p/5082687.html
-
-## The below approach is to use word frequency for classification
-billboard_wrk$lyrics <- as.character(billboard_wrk$lyrics)
-
-# select rap and non-rap songs with equal quantity
-rap <- billboard_wrk %>% 
-  filter(rap == 1) %>% 
-  select(song_name, lyrics) %>% 
-  mutate(genre = "rap")
-
-rap_non <- billboard_wrk %>% 
-  filter(rap == 0) %>% 
-  sample_n(nrow(rap)) %>% 
-  select(song_name, lyrics) %>% 
-  mutate(genre = "non_rap")
-
-dat_model <- rbind(rap, rap_non)
-
-# data cleaning: remove stopwords and get word counts
-dat_model_new <- dat_model %>% 
-  group_by(song_name, genre) %>% 
-  unnest_tokens(word, lyrics) %>% 
-  anti_join(stop_words, by = "word") %>% 
-  count(song_name, genre, word) %>% 
-  arrange(desc(n)) %>% 
-  mutate(genre_rap = ifelse(genre == "rap", 1, 0)) %>% 
-  spread(word, n, fill = 0)
-
-dat_model_new$genre_rap <- as.factor(dat_model_new$genre_rap)
-
-## 75% of the sample size
-smp_size <- floor(0.75 * nrow(dat_model_new))
-
-## set the seed and split to train / test
-set.seed(123)
-train_ind <- sample(seq_len(nrow(dat_model_new)), size = smp_size)
-train <- dat_model_new[train_ind, ]
-test <- dat_model_new[-train_ind, ]
-
-# SVM -----------------------------
-# set control parameters
-trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3)
-
-# use svmLinear method to train model (takes time to run!!!)
-svm_Linear <- train(genre_rap ~., data = train[, -1], method = "svmLinear",
-                    trControl=trctrl,
-                    preProcess = c("center", "scale"),
-                    tuneLength = 10)
-
-svm_Linear # 84.3% accuracy on training set
-
-# predict on test set
-test_pred <- predict(svm_Linear, newdata = test)
-confusionMatrix(test_pred, test$genre_rap)  # 84.83%
-
-# # try grid search
-# grid <- expand.grid(C = c(0, 0.02, 0.05, 0.1, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 5))
-# svm_Linear_Grid <- train(genre_rap ~., data = train[, -1], method = "svmLinear",
-#                          trControl=trctrl,
-#                          preProcess = c("center", "scale"),
-#                          tuneGrid = grid,
-#                          tuneLength = 10)
-# svm_Linear_Grid
-# plot(svm_Linear_Grid)
-# # predict on test set
-# test_pred_grid <- predict(svm_Linear_Grid, newdata = test)
-# confusionMatrix(test_pred_grid, test$genre_rap) # accuracy: 84.83%
