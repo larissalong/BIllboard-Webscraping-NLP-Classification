@@ -7,10 +7,7 @@ library(wordVectors)
 library(magrittr)
 library(forcats)
 
-## --------------------------------------- Part 5: Classification --------------------------------------
 ### There are 2 ways to predict whether a song is rap or not based on its lyrics: word frequency or word2vec
-## https://36kr.com/p/5082687.html
-## The below approach is to use word frequency for classification
 
 billboard_wrk <- readRDS("data/billboard_join_final.rds") 
 
@@ -74,78 +71,6 @@ confusionMatrix(test_pred, test$genre_rap)  # 85.78%
 # testing:  Billie Jean by Michael Jackson
 test_pred[64]
 
-# NN (error) -----------------------------
-## set control parameters
-# numFolds <- trainControl(method = 'cv', 
-#                          number = 10, 
-#                          classProbs = TRUE, 
-#                          verboseIter = TRUE, 
-#                          summaryFunction = twoClassSummary, 
-#                          preProcOptions = list(thresh = 0.75, ICAcomp = 3, k = 5))
-# 
-# ## re-assign column names to avoid errors
-# colnames(train) <- sapply(colnames(train), function(x) {make.names(as.factor(x))})
-# colnames(test) <- sapply(colnames(test), function(x) {make.names(as.factor(x))})
-# 
-# ## keep the last duplicated column names to avoid errors
-# train <- train[, !duplicated(colnames(train), fromLast = TRUE)] 
-# test <- test[, !duplicated(colnames(test), fromLast = TRUE)]
-# 
-# ## get column numbers for special characters
-# x <- ncol(train) - 5
-# y <- ncol(train)
-# #b <- as.data.frame(colnames(train[, -c(1, 3:155, x:y)]))
-# 
-# ## ERROR MESSAGES:
-# ## At least one of the class levels is not a valid R variable name; 
-# ## This will cause errors when class probabilities are generated because 
-# ## the variables names will be converted to X0, X1...
-# 
-# ## define a function to deal with errors/ warnings
-# nn_output <- function(train, which) {
-#   out <- tryCatch(
-#     {
-#       #readLines(con=train, warn=FALSE) 
-#       
-#       nn <- train(genre_rap ~., data = cbind(train[, 2], train[, which]), 
-#                   method = 'nnet', 
-#                   preProcess = c('center', 'scale'), 
-#                   trControl = numFolds, tuneGrid=expand.grid(size = c(10), decay = c(0.1)))
-#       
-#       return(nn)
-#       
-#     },
-#     error=function(cond) {
-#       #message("Here's the original error message:")
-#       #message(cond)
-#       return("Error!")
-#     },
-#     warning=function(cond) {
-#       return("Warning!")
-#     },
-#     finally={}
-#   )    
-#   return(out)
-# }
-# 
-# my_output <- c()
-# 
-# ## find which columns result in errors (take time to run!)
-# for(i in 3:ncol(train)){
-#   my_output[i-2] <- nn_output(train, i)
-# }
-# 
-# ##-- -- to be done -- --
-# ## train the model 
-# nn <- train(genre_rap ~., data = train[, -c(1, 3:155, x:y)], method = 'nnet', 
-#             preProcess = c('center', 'scale'), 
-#             trControl = numFolds, tuneGrid=expand.grid(size = c(10), decay = c(0.1)))
-# print(nn)
-# 
-# ## predict on test set
-# pred_nn_test <- predict(nn, newdata = test)
-# confusionMatrix(pred_nn_test, test$genre_rap)
-
 # Logistic Regression -----------------------------
 ## (take time to run!)
 logit <- train(genre_rap ~., data = train[, -1], method = "glm", family = "binomial")
@@ -202,8 +127,7 @@ confusionMatrix(test_pred, test$genre_rap)  # Accuracy: 83.33%
 # confusionMatrix(pred_logit_test, test$genre_rap)
 
 
-
-#********************* Section 3: word vector embedding by word2vec*************************#
+#********************* Section 3: word vector embedding by word2vec ************************#
 ## load pre-trained Glove (word2vec)
 rawVecs <- read_rds('data/glove300.rds') # each column represents one axis in the vector space in 300-D space
 wvM <- as.matrix(select(rawVecs,-word))
@@ -243,7 +167,6 @@ svm_Linear # 85.11% accuracy on training set
 # predict on test set
 test_pred <- predict(svm_Linear, newdata = test)
 confusionMatrix(test_pred, test$genre_rap) # 83.41%
-
 
 
 ### Another approach: sum up the embedding vectors for each word in the lyrics component-wise
