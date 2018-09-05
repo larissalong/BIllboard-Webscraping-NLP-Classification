@@ -1,7 +1,7 @@
 # Billboard-Webscraping-NLP-Project
 
 ## Objectives: 
-We are a group of music lovers from MS Business Analytics Program 2018. By studying the lyrics of hot 100 songs on Billboard year-end from year 1968 to 2017, we would like to answer the below questions:
+We are a group of music lovers from MS Business Analytics Program 2018, UC San Diego. By studying the lyrics of hot 100 songs on Billboard year-end from year 1968 to 2017, we would like to answer the below questions:
 
 1. How did music topics change over time? 
 
@@ -25,6 +25,7 @@ We are a group of music lovers from MS Business Analytics Program 2018. By study
 1. Hot 100 ranking: Extract datatable from wikipedia by year 
 2. Lyrics: from the above two websites
 3. Genre: google search to fetch the below variables:
+    
     a. Song name
     
     b. Artist name
