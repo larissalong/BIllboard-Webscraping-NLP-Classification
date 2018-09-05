@@ -55,7 +55,7 @@ We conducted text mining by different dimensions and metrics:
     
     e. Topic modeling
     
-    f. repetition
+    f. Repetition
  
 ## Classification:
 To predict whether a song belongs to a particular song genre or not solely based on lyrics, we used the below approaches to conduct feature engineering:
